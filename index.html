@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample QC Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Sample QC Portal</h1>
+      <p>Upload a vendor QC report, generate a CD Genomics English gold-shell HTML, preview, then download when delivery gates pass.</p>
+    </div>
+    <div id="health" class="pill">Checking API…</div>
+  </header>
+  <main>
+    <section class="left">
+      <div class="card">
+        <h2>New job</h2>
+        <form id="upload-form">
+          <label for="file">Vendor report (.doc/.docx/.pdf/.xlsx/.zip)</label>
+          <input id="file" name="file" type="file" required>
+
+          <label for="order_id">Company order ID</label>
+          <input id="order_id" name="order_id" type="text" required placeholder="e.g. CDG-2026-001">
+
+          <label for="sample_count">Sample count (optional)</label>
+          <input id="sample_count" name="sample_count" type="number" min="1" step="1">
+
+          <label for="qc_type">QC type override (optional)</label>
+          <select id="qc_type" name="qc_type">
+            <option value="">Auto-detect</option>
+            <option value="dna_long_read">dna_long_read</option>
+            <option value="dna_illumina">dna_illumina</option>
+            <option value="rna">rna</option>
+            <option value="hic">hic</option>
+            <option value="library">library</option>
+            <option value="generic">generic</option>
+          </select>
+
+          <label for="project_type">Project type note (optional)</label>
+          <input id="project_type" name="project_type" type="text" placeholder="e.g. PacBio DNA">
+
+          <div style="margin-top:0.9rem;display:flex;gap:0.5rem">
+            <button type="submit">Upload &amp; run</button>
+          </div>
+          <div id="form-status"></div>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <div class="jobs-head">
+          <h2 style="margin:0">Jobs</h2>
+          <button type="button" class="secondary" id="refresh-jobs">Refresh</button>
+        </div>
+        <ul id="jobs"></ul>
+      </div>
+    </section>
+
+    <section class="card preview-wrap">
+      <h2>Preview</h2>
+      <iframe id="preview-frame" title="Report preview"></iframe>
+      <h2>Job / gate</h2>
+      <pre id="gate">Select a job</pre>
+    </section>
+  </main>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
