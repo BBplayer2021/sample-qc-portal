@@ -1,2 +1,2 @@
-// GitHub Pages frontend → public API on Aliyun ECS (reverse-tunneled to analysis host).
-window.SAMPLE_QC_API_BASE = "https://sample-qc.tech";
+// Local / ECS same-origin leave empty. GitHub Pages must set the public API.
+window.SAMPLE_QC_API_BASE = window.SAMPLE_QC_API_BASE || "https://sample-qc.tech";
