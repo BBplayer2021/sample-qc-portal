@@ -1,71 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sample QC Portal</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>样本质检报告英文化</title>
+  <link rel="stylesheet" href="styles.css?v=20261118e">
 </head>
 <body>
-  <header>
-    <div>
-      <h1>Sample QC Portal</h1>
-      <p>Upload a vendor QC report, generate a CD Genomics English gold-shell HTML, preview, then download when delivery gates pass.</p>
+  <header class="top">
+    <div class="brand">
+      <h1>样本质检报告英文化</h1>
+      <p>供应商中文质检 → CD Genomics 英文金标壳 HTML</p>
     </div>
-    <div id="health" class="pill">Checking API…</div>
+    <div id="health" class="pill">检查服务…</div>
   </header>
-  <main>
-    <section class="left">
-      <div class="card">
-        <h2>New job</h2>
-        <form id="upload-form">
-          <label for="file">Vendor report (.doc/.docx/.pdf/.xlsx/.zip)</label>
-          <input id="file" name="file" type="file" required>
 
-          <label for="order_id">Company order ID</label>
-          <input id="order_id" name="order_id" type="text" required placeholder="e.g. CDG-2026-001">
+  <nav class="steps" id="steps" aria-label="流程">
+    <div class="step" data-step="1"><span>1</span>上传</div>
+    <div class="step" data-step="2"><span>2</span>确认信息</div>
+    <div class="step" data-step="3"><span>3</span>处理图片</div>
+    <div class="step" data-step="4"><span>4</span>预览下载</div>
+  </nav>
 
-          <label for="sample_count">Sample count (optional)</label>
-          <input id="sample_count" name="sample_count" type="number" min="1" step="1">
+  <!-- Step 1: DeepL-style upload -->
+  <section id="view-upload" class="view">
+    <div class="dropzone" id="dropzone">
+      <input id="file" type="file" class="file-input" accept=".doc,.docx,.xls,.xlsx,.xlsm,.pdf,.zip,.html,.htm,.txt">
+      <div class="dz-icons">DOC · PDF · XLSX · ZIP</div>
+      <p class="dz-title">将供应商报告拖到此处</p>
+      <p class="dz-sub">或</p>
+      <button type="button" class="btn-primary" id="pick-file">选择文件</button>
+      <p class="dz-hint">支持 .doc / .docx / .pdf / .xlsx / 供应商 HTML zip，单文件不超过 50 MB</p>
+    </div>
+    <div id="upload-status" class="form-note center"></div>
+    <details class="recent">
+      <summary>最近任务</summary>
+      <ul id="jobs"></ul>
+    </details>
+  </section>
 
-          <label for="qc_type">QC type override (optional)</label>
-          <select id="qc_type" name="qc_type">
-            <option value="">Auto-detect</option>
-            <option value="dna_long_read">dna_long_read</option>
-            <option value="dna_illumina">dna_illumina</option>
-            <option value="rna">rna</option>
-            <option value="hic">hic</option>
-            <option value="library">library</option>
-            <option value="generic">generic</option>
-          </select>
+  <!-- Step 2: Confirm meta -->
+  <section id="view-confirm" class="view card-wide" hidden>
+    <h2>确认报告信息</h2>
+    <p class="lede">请填写<strong>本公司对客户的订单号</strong>。报告中的供应商合同号仅供参考，不可当作订单号。</p>
+    <div id="vendor-ref" class="ref-box" hidden></div>
+    <div id="detect-summary" class="form-note"></div>
+    <label for="confirm-order-id">本公司订单号 <span class="req">*</span></label>
+    <input id="confirm-order-id" type="text" required pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" placeholder="例如 CDG-2026-001">
+    <label for="confirm-sample-count">样本数</label>
+    <input id="confirm-sample-count" type="number" min="1" max="10000" step="1">
+    <label for="confirm-qc-type">报告类型</label>
+    <select id="confirm-qc-type">
+      <option value="dna_long_read">三代 DNA</option>
+      <option value="dna_illumina">二代 DNA</option>
+      <option value="rna">RNA</option>
+      <option value="hic">Hi-C 交联</option>
+      <option value="library">文库</option>
+      <option value="generic">通用</option>
+    </select>
+    <label for="confirm-project-type">项目类型备注</label>
+    <input id="confirm-project-type" type="text" maxlength="120" placeholder="例如 PacBio DNA">
+    <div class="row-actions">
+      <button type="button" class="secondary" id="back-upload">返回</button>
+      <button type="button" id="confirm-run">确认，进入图片处理</button>
+    </div>
+    <div id="confirm-status" class="form-note"></div>
+  </section>
 
-          <label for="project_type">Project type note (optional)</label>
-          <input id="project_type" name="project_type" type="text" placeholder="e.g. PacBio DNA">
+  <!-- Step 3: Images -->
+  <section id="view-images" class="view card-wide" hidden>
+    <h2>处理图片</h2>
+    <p class="lede">品牌 Logo 自动剔除。干净科学图会<strong>默认纳入</strong>报告。带<strong>公司水印</strong>的须上传净图；带<strong>中文仪器界面</strong>的可<strong>裁剪只留电泳图</strong>（或上传净图 / 排除）。列表缩略图较小，<strong>点击图片可放大审核</strong>（Esc / 点击背景关闭）。可先生成预览核对。</p>
+    <div id="images-panel" class="images-panel"></div>
+    <div id="images-status" class="form-note"></div>
+    <div class="row-actions">
+      <button type="button" class="secondary" id="back-confirm">上一步</button>
+      <button type="button" id="generate-run">生成英文报告</button>
+    </div>
+  </section>
 
-          <div style="margin-top:0.9rem;display:flex;gap:0.5rem">
-            <button type="submit">Upload &amp; run</button>
+  <div id="img-lightbox" class="img-lightbox" hidden role="dialog" aria-modal="true" aria-label="图片放大预览">
+    <button type="button" class="img-lightbox-close" id="img-lightbox-close" aria-label="关闭">×</button>
+    <img id="img-lightbox-img" alt="">
+    <div id="img-lightbox-caption" class="img-lightbox-caption"></div>
+  </div>
+
+  <div id="crop-modal" class="crop-modal" hidden>
+    <div class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+      <div class="crop-head">
+        <h3 id="crop-title">裁剪科学图</h3>
+        <button type="button" class="secondary small" id="crop-cancel">关闭</button>
+      </div>
+      <p class="muted small">拖动绿框移动；拖四角/边缘调整大小。只保留电泳/峰图，去掉中文表头与结果表。</p>
+      <div class="crop-stage" id="crop-stage">
+        <div class="crop-frame" id="crop-frame">
+          <img id="crop-image" alt="待裁剪" draggable="false">
+          <div id="crop-box" class="crop-box">
+            <span class="crop-handle nw" data-handle="nw"></span>
+            <span class="crop-handle ne" data-handle="ne"></span>
+            <span class="crop-handle sw" data-handle="sw"></span>
+            <span class="crop-handle se" data-handle="se"></span>
+            <span class="crop-handle n" data-handle="n"></span>
+            <span class="crop-handle s" data-handle="s"></span>
+            <span class="crop-handle e" data-handle="e"></span>
+            <span class="crop-handle w" data-handle="w"></span>
           </div>
-          <div id="form-status"></div>
-        </form>
-      </div>
-
-      <div class="card" style="margin-top:1rem">
-        <div class="jobs-head">
-          <h2 style="margin:0">Jobs</h2>
-          <button type="button" class="secondary" id="refresh-jobs">Refresh</button>
         </div>
-        <ul id="jobs"></ul>
       </div>
-    </section>
+      <div class="row-actions">
+        <button type="button" class="secondary" id="crop-reset">恢复建议框</button>
+        <button type="button" id="crop-apply">确认裁剪并纳入</button>
+      </div>
+      <div id="crop-status" class="form-note"></div>
+    </div>
+  </div>
 
-    <section class="card preview-wrap">
-      <h2>Preview</h2>
-      <iframe id="preview-frame" title="Report preview"></iframe>
-      <h2>Job / gate</h2>
-      <pre id="gate">Select a job</pre>
-    </section>
-  </main>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <!-- Step 4: Preview + light edit -->
+  <section id="view-preview" class="view preview-view" hidden>
+    <div class="preview-bar">
+      <div>
+        <h2 id="job-title">预览</h2>
+        <div id="job-summary" class="job-summary muted"></div>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="secondary" id="new-job">新建任务</button>
+        <button type="button" class="secondary" id="back-images">返回图片</button>
+        <button type="button" id="download-job" disabled>下载 HTML</button>
+      </div>
+    </div>
+    <div id="gate-panel" class="gate-panel"></div>
+    <div class="preview-layout">
+      <aside class="edit-panel card-wide">
+        <h3>修改报告</h3>
+        <p class="muted small">数值与样本编号不可改。改完点保存会刷新预览。</p>
+        <label for="edit-title">报告标题</label>
+        <input id="edit-title" type="text" maxlength="200" placeholder="例如 DNA Extraction QC Report">
+        <div id="edit-conclusions" class="concl-table"></div>
+        <div class="row-actions">
+          <button type="button" id="save-edits">保存并刷新预览</button>
+        </div>
+        <div id="edit-status" class="form-note"></div>
+      </aside>
+      <iframe id="preview-frame" title="报告预览"></iframe>
+    </div>
+  </section>
+
+  <script src="config.js?v=20261118e"></script>
+  <script src="app.js?v=20261118e"></script>
 </body>
 </html>
